@@ -9,14 +9,13 @@ def create_app():
 
     app.config.from_object(config)
 
-    # Setup CORS
     cors(
         app,
         allow_credentials=True,
         allow_headers=["Content-Type", "Authorization",
                        "Access-Control-Allow-Origin"],
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_origin="*"  # For development, use "*"
+        allow_origin="*"
     )
 
     app.register_blueprint(api_blueprint)
@@ -25,3 +24,6 @@ def create_app():
 
 
 app = create_app()
+
+if __name__ == "__main__":
+    app.run(debug=True)

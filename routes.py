@@ -5,7 +5,7 @@ from auth import jwt_required
 from config import config
 import services as srv
 
-api = Blueprint('api', __name__, url_prefix='/api/v1')
+api = Blueprint('api', __name__, url_prefix='/api/v2')
 
 
 def serialize_document(doc):
@@ -13,7 +13,10 @@ def serialize_document(doc):
         doc['_id'] = str(doc['_id'])
     return doc
 
-# --- Auth Routes ---
+
+@api.route('/')
+async def index():
+    return jsonify({"message": "Welcome to the Contacts API!"})
 
 
 @api.route('/signup', methods=['POST'])
