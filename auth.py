@@ -3,6 +3,7 @@ from quart import request, jsonify, g
 import jwt
 from config import config
 
+
 def jwt_required(f):
     @wraps(f)
     async def decorated_function(*args, **kwargs):
