@@ -16,7 +16,7 @@ def serialize_document(doc):
 
 @api.route('/')
 async def index():
-    return jsonify({"message": "Welcome to the Contacts API!"})
+    return jsonify({"message": "Welcome to the Surat Sitilink API!"})
 
 
 @api.route('/signup', methods=['POST'])

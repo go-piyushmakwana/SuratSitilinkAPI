@@ -15,7 +15,7 @@ def create_app():
         allow_headers=["Content-Type", "Authorization",
                        "Access-Control-Allow-Origin"],
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_origin="*"
+        allow_origin="https://suratstlk.onrender.com",
     )
 
     app.register_blueprint(api_blueprint)
@@ -25,5 +25,5 @@ def create_app():
 
 app = create_app()
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     app.run(debug=True)
