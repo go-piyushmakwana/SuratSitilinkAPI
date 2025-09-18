@@ -44,6 +44,13 @@ async def validate_user_async(email: str, password: str) -> bool:
         print(f"Error while validating user: {e}")
         return False
 
+async def get_route_by_id_async(route_id: str):
+    try:
+        route = await bus_routes_collection.find_one({"service_no": route_id.upper()}, {"_id": 0})
+        return route
+    except Exception as e:
+        print(f"Error getting route by ID: {e}")
+        return None
 
 async def get_all_routes_async():
     try:

@@ -68,6 +68,17 @@ async def api_get_stops():
     stops = await srv.get_all_stops_async()
     return jsonify({"stops": stops}), 200
 
+@api.route('/routes/<route_id>', methods=['GET'])
+async def api_get_route_by_id(route_id):
+    try:
+        route = await srv.get_route_by_id_async(route_id)
+        if route:
+            return jsonify({"route": route}), 200
+        else:
+            return jsonify({"error": "Route not found."}), 404
+    except Exception as e:
+        print(f"Error in api_get_route_by_id: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
 
 @api.route('/find_routes', methods=['GET'])
 async def api_find_routes():
