@@ -60,13 +60,13 @@ async def api_login():
 @api.route('/routes', methods=['GET'])
 async def api_get_routes():
     routes = await srv.get_all_routes_async()
-    return jsonify({"success": True, "routes": routes}), 200
+    return jsonify({"routes": routes}), 200
 
 
 @api.route('/stops', methods=['GET'])
 async def api_get_stops():
     stops = await srv.get_all_stops_async()
-    return jsonify({"success": True, "stops": stops}), 200
+    return jsonify({"stops": stops}), 200
 
 
 @api.route('/find_routes', methods=['GET'])
@@ -78,6 +78,6 @@ async def api_find_routes():
 
     routes = await srv.find_routes_between_stops_async(origin, destination)
     if routes:
-        return jsonify({"success": True, "routes": routes}), 200
+        return jsonify({"routes": routes}), 200
     else:
-        return jsonify({"success": False, "message": "No routes found between the specified stops."}), 404
+        return jsonify({"message": "No routes found between the specified stops."}), 404
