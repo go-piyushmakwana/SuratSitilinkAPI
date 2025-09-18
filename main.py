@@ -11,11 +11,10 @@ def create_app():
 
     cors(
         app,
-        allow_credentials=True,
         allow_headers=["Content-Type", "Authorization",
                        "Access-Control-Allow-Origin"],
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_origin="https://mysuratsitilink.onrender.com",
+        allow_origin="*",
     )
 
     app.register_blueprint(api_blueprint)
