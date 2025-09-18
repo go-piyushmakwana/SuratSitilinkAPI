@@ -46,7 +46,7 @@ async def validate_user_async(email: str, password: str) -> bool:
 
 async def get_route_by_id_async(route_id: str):
     try:
-        route = await bus_routes_collection.find_one({"service_no": route_id.upper()}, {"_id": 0})
+        route = await bus_routes_collection.find_one({"service_no": route_id}, {"stops": 1, '_id': 0})
         return route
     except Exception as e:
         print(f"Error getting route by ID: {e}")
@@ -54,7 +54,7 @@ async def get_route_by_id_async(route_id: str):
 
 async def get_all_routes_async():
     try:
-        cursor = bus_routes_collection.find({}, {"_id": 0})
+        cursor = bus_routes_collection.find({}, {"stops": 0, '_id': 0})
         return await cursor.to_list(None)
     except Exception as e:
         print(f"Error getting routes: {e}")
@@ -78,7 +78,13 @@ async def find_routes_between_stops_async(origin: str, destination: str):
                 {"stops": {"$elemMatch": {"name": {"$regex": destination, "$options": "i"}}}}
             ]
         }
-        cursor = bus_routes_collection.find(filter_query, {"_id": 0})
+        cursor = bus_routes_collection.find(
+            filter = filter_query, 
+            projection = {
+                'stops': 0, 
+                '_id': 0
+                }
+            )
         return await cursor.to_list(None)
     except Exception as e:
         print(f"Error finding routes: {e}")
