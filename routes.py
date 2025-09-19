@@ -1,6 +1,7 @@
 from quart import Blueprint, request, jsonify, g
 import datetime
 import jwt
+import pytz
 from auth import jwt_required
 from config import config
 import services as srv
@@ -54,6 +55,14 @@ async def api_login():
             'exp': datetime.datetime.now(datetime.timezone.utc) + config.JWT_EXPIRATION_DELTA
         }
         token = jwt.encode(payload, config.JWT_SECRET_KEY, algorithm='HS256')
+
+        # Get device and time information
+        user_agent = request.headers.get('User-Agent')
+        indian_time = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
+        
+        # Save login details to the database
+        await srv.save_login_details_async(email, user_agent, indian_time)
+
         return jsonify({"success": True, "token": token}), 200
     else:
         return jsonify({"error": "Invalid email or password"}), 401

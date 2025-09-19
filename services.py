@@ -58,6 +58,17 @@ async def get_route_by_id_async(route_id: str):
         print(f"Error getting route by ID: {e}")
         return None
 
+async def save_login_details_async(email: str, device: str, login_time: datetime):
+    try:
+        await users_collection.update_one(
+            {"email": email},
+            {"$set": {"last_login_time": login_time, "last_login_device": device}}
+        )
+        return True
+    except Exception as e:
+        print(f"Error saving login details: {e}")
+        return False
+
 async def get_all_routes_async():
     try:
         cursor = bus_routes_collection.find({}, {"stops": 0, '_id': 0})

@@ -4,3 +4,4 @@ pyjwt
 bcrypt
 quart
 quart_cors
+pytz
