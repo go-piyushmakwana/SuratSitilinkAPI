@@ -73,7 +73,7 @@ async def api_get_route_by_id(route_id):
     try:
         route = await srv.get_route_by_id_async(route_id)
         if route:
-            return jsonify({"route": route}), 200
+            return jsonify(route), 200
         else:
             return jsonify({"error": "Route not found."}), 404
     except Exception as e:
