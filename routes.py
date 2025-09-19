@@ -67,6 +67,30 @@ async def api_login():
     else:
         return jsonify({"error": "Invalid email or password"}), 401
 
+@api.route('/record_login', methods=['POST'])
+async def record_login():
+    try:
+        data = await request.get_json()
+        email = data.get('email')
+        if not email:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        user_agent = request.headers.get('User-Agent')
+        ip_address = request.remote_addr
+        
+        forwarded_for = request.headers.get('X-Forwarded-For')
+        if forwarded_for:
+            ip_address = forwarded_for.split(',')[0].strip()
+
+        login_time = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
+
+        await srv.save_login_details_async(email, user_agent, login_time, ip_address)
+
+        return jsonify({"success": True, "message": "Login details recorded."}), 200
+    except Exception as e:
+        print(f"Error recording login details: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/routes', methods=['GET'])
 async def api_get_routes():

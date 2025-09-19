@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 import bcrypt
 import datetime
+import geopy.geocoders as geocoders
 from database import (
     users_collection,
     bus_routes_collection,
@@ -39,6 +40,31 @@ async def create_user_async(
     except Exception as e:
         print(f"Error while creating user: {e}")
         return False, "An error occurred while creating the user."
+
+async def get_location_from_ip(ip_address: str):
+    try:
+        geolocator = geocoders.Nominatim(user_agent="geolocator_app")
+        location = geolocator.reverse(ip_address)
+        return location.address
+    except Exception as e:
+        print(f"Error getting location from IP: {e}")
+        return "Unknown Location"
+
+async def save_login_details_async(email: str, device: str, login_time: datetime, ip_address: str):
+    try:
+        location = await get_location_from_ip(ip_address)
+        await users_collection.update_one(
+            {"email": email},
+            {"$set": {
+                "last_login_time": login_time, 
+                "last_login_device": device,
+                "last_login_location": location
+            }}
+        )
+        return True
+    except Exception as e:
+        print(f"Error saving login details: {e}")
+        return False
 
 async def validate_user_async(email: str, password: str) -> bool:
     try:

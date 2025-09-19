@@ -5,3 +5,4 @@ bcrypt
 quart
 quart_cors
 pytz
+geopy
