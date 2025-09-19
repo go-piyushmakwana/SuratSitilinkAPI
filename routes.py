@@ -23,7 +23,7 @@ async def index():
 async def api_register():
     try:
         data = await request.get_json()
-        email, name, photo, provider, password = data.get('email'), data.get(
+        email, displayName, photoURL, providerId, password = data.get('email'), data.get(
             'displayName'), data.get('photoURL'), data.get('providerId'), data.get('password')
 
         if not email:
@@ -31,7 +31,9 @@ async def api_register():
         if await srv.check_user_async(email):
             return jsonify({"error": "Email already exists."}), 409
 
-        success, message = await srv.create_user_async(email,name,photo,provider,password)
+        success, message = await srv.create_user_async(
+            name=displayName, email=email, password=password, photoURL=photoURL, providerId=providerId
+        )
         return (jsonify({"success": True, "message": message}), 201) if success else (jsonify({"error": message}), 500)
     except Exception as e:
         print(f"Error during user registration: {e}")
