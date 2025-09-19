@@ -16,23 +16,29 @@ async def check_user_async(email: str) -> bool:
         return False
 
 
-async def create_user_async(name: str, email: str, password: str, mobile: str) -> tuple[bool, str]:
+async def create_user_async(
+        email: str,
+        name: str,
+        provider: str,
+        photo: str = None,
+        password: str = None
+    ) -> tuple[bool, str]:
     try:
         hashed_password = bcrypt.hashpw(
             password.encode('utf-8'), bcrypt.gensalt())
         user = {
-            "name": name,
             "email": email,
-            "password": hashed_password,
-            "mobile": mobile,
-            "created_at": datetime.datetime.now(datetime.timezone.utc)
+            "name": name,
+            "photo": photo,
+            "provider": provider,
+            "created_at": datetime.datetime.now(datetime.timezone.utc),
+            "password": hashed_password
         }
         await users_collection.insert_one(user)
         return True, "User created successfully."
     except Exception as e:
         print(f"Error while creating user: {e}")
         return False, "An error occurred while creating the user."
-
 
 async def validate_user_async(email: str, password: str) -> bool:
     try:

@@ -19,19 +19,19 @@ async def index():
     return jsonify({"message": "Welcome to the Surat Sitilink API!"})
 
 
-@api.route('/signup', methods=['POST'])
+@api.route('/register_user', methods=['POST'])
 async def api_register():
     try:
         data = await request.get_json()
-        name, email, password, mobile = data.get('name'), data.get(
-            'email'), data.get('password'), data.get('mobile')
+        email, name, photo, provider, password = data.get('email'), data.get(
+            'displayName'), data.get('photoURL'), data.get('providerId'), data.get('password')
 
-        if not all([name, email, password]):
+        if not email:
             return jsonify({"error": "Missing required fields"}), 400
         if await srv.check_user_async(email):
             return jsonify({"error": "Email already exists."}), 409
 
-        success, message = await srv.create_user_async(name, email, password, mobile)
+        success, message = await srv.create_user_async(email,name,photo,provider,password)
         return (jsonify({"success": True, "message": message}), 201) if success else (jsonify({"error": message}), 500)
     except Exception as e:
         print(f"Error during user registration: {e}")
