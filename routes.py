@@ -32,7 +32,7 @@ async def api_register():
             return jsonify({"error": "Email already exists."}), 409
 
         success, message = await srv.create_user_async(
-            name=displayName, email=email, password=password, photoURL=photoURL, providerId=providerId
+            name=displayName, email=email, password=password, photo=photoURL, provider=providerId
         )
         return (jsonify({"success": True, "message": message}), 201) if success else (jsonify({"error": message}), 500)
     except Exception as e:
