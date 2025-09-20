@@ -4,5 +4,5 @@ pyjwt
 bcrypt
 quart
 quart_cors
-pytz
-geopy
+requests
+bs4

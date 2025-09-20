@@ -36,6 +36,19 @@ async def api_register():
         print(f"Error during user registration: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@api.route('/fare_prices', methods=['GET'])
+async def api_get_fare_prices():
+    origin = request.args.get('origin')
+    destination = request.args.get('destination')
+    if not origin or not destination:
+        return jsonify({"error": "Both 'origin' and 'destination' query parameters are required."}), 400
+
+    fare_details = await srv.get_fare_details_async(origin, destination)
+    if fare_details:
+        return jsonify(fare_details), 200
+    else:
+        return jsonify({"error": "Could not retrieve fare details."}), 500
+
 @api.route('/update_user', methods=['PUT'])
 async def api_update_user():
     try:
