@@ -1,9 +1,5 @@
 from quart import Blueprint, request, jsonify, g
-import datetime
-import jwt
-import pytz
 from auth import jwt_required
-from config import config
 import services as srv
 
 api = Blueprint('api', __name__, url_prefix='/api/v2')
@@ -40,57 +36,23 @@ async def api_register():
         print(f"Error during user registration: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
-
-@api.route('/login', methods=['POST'])
-async def api_login():
-    data = await request.get_json()
-    email, password = data.get('email'), data.get('password')
-    if not all([email, password]):
-        return jsonify({"error": "Missing email or password"}), 400
-
-    if await srv.validate_user_async(email, password):
-        # Generate a JWT token
-        payload = {
-            'email': email,
-            'exp': datetime.datetime.now(datetime.timezone.utc) + config.JWT_EXPIRATION_DELTA
-        }
-        token = jwt.encode(payload, config.JWT_SECRET_KEY, algorithm='HS256')
-
-        # Get device and time information
-        user_agent = request.headers.get('User-Agent')
-        indian_time = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
-        
-        # Save login details to the database
-        await srv.save_login_details_async(email, user_agent, indian_time)
-
-        return jsonify({"success": True, "token": token}), 200
-    else:
-        return jsonify({"error": "Invalid email or password"}), 401
-
-@api.route('/record_login', methods=['POST'])
-async def record_login():
+@api.route('/update_user', methods=['PUT'])
+async def api_update_user():
     try:
         data = await request.get_json()
         email = data.get('email')
-        if not email:
+        name = data.get('name')
+        photo = data.get('photo')
+        password = data.get('password')
+
+        if not email or not name:
             return jsonify({"error": "Missing required fields"}), 400
 
-        user_agent = request.headers.get('User-Agent')
-        ip_address = request.remote_addr
-        
-        forwarded_for = request.headers.get('X-Forwarded-For')
-        if forwarded_for:
-            ip_address = forwarded_for.split(',')[0].strip()
-
-        login_time = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
-
-        await srv.save_login_details_async(email, user_agent, login_time, ip_address)
-
-        return jsonify({"success": True, "message": "Login details recorded."}), 200
+        success, message = await srv.update_user_async(email=email, name=name, photo=photo, password=password)
+        return (jsonify({"success": True, "message": message}), 200) if success else (jsonify({"error": message}), 500)
     except Exception as e:
-        print(f"Error recording login details: {e}")
+        print(f"Error during user update: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
-
 
 @api.route('/routes', methods=['GET'])
 async def api_get_routes():
@@ -103,6 +65,7 @@ async def api_get_stops():
     stops = await srv.get_all_stops_async()
     return jsonify({"stops": stops}), 200
 
+
 @api.route('/routes/<route_id>', methods=['GET'])
 async def api_get_route_by_id(route_id):
     try:
@@ -114,6 +77,7 @@ async def api_get_route_by_id(route_id):
     except Exception as e:
         print(f"Error in api_get_route_by_id: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/find_routes', methods=['GET'])
 async def api_find_routes():

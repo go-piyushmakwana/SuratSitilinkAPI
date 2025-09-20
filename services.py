@@ -41,41 +41,28 @@ async def create_user_async(
         print(f"Error while creating user: {e}")
         return False, "An error occurred while creating the user."
 
-async def get_location_from_ip(ip_address: str):
+async def update_user_async(email : str, name : str, photo : str, password : str) -> tuple[bool, str]:
     try:
-        geolocator = geocoders.Nominatim(user_agent="geolocator_app")
-        location = geolocator.reverse(ip_address)
-        return location.address
-    except Exception as e:
-        print(f"Error getting location from IP: {e}")
-        return "Unknown Location"
+        update_fields = {
+            "name": name,
+            "photo": photo
+        }
+        if password:
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            update_fields["password"] = hashed_password
 
-async def save_login_details_async(email: str, device: str, login_time: datetime, ip_address: str):
-    try:
-        location = await get_location_from_ip(ip_address)
-        await users_collection.update_one(
+        result = await users_collection.update_one(
             {"email": email},
-            {"$set": {
-                "last_login_time": login_time, 
-                "last_login_device": device,
-                "last_login_location": location
-            }}
+            {"$set": update_fields}
         )
-        return True
+        if result.modified_count == 1:
+            return True, "User updated successfully."
+        else:
+            return False, "No changes made to the user."
     except Exception as e:
-        print(f"Error saving login details: {e}")
-        return False
-
-async def validate_user_async(email: str, password: str) -> bool:
-    try:
-        user = await users_collection.find_one({"email": email})
-        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
-            return True
-        return False
-    except Exception as e:
-        print(f"Error while validating user: {e}")
-        return False
-
+        print(f"Error while updating user: {e}")
+        return False, "An error occurred while updating the user."
+    
 async def get_route_by_id_async(route_id: str):
     try:
         route = await bus_routes_collection.find_one({"service_no": route_id}, {"stops": 1, '_id': 0})
@@ -83,17 +70,6 @@ async def get_route_by_id_async(route_id: str):
     except Exception as e:
         print(f"Error getting route by ID: {e}")
         return None
-
-async def save_login_details_async(email: str, device: str, login_time: datetime):
-    try:
-        await users_collection.update_one(
-            {"email": email},
-            {"$set": {"last_login_time": login_time, "last_login_device": device}}
-        )
-        return True
-    except Exception as e:
-        print(f"Error saving login details: {e}")
-        return False
 
 async def get_all_routes_async():
     try:
