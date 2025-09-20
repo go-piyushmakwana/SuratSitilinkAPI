@@ -1,17 +1,22 @@
-from bson.objectid import ObjectId
-import bcrypt
 import datetime
-import requests
 import warnings
+import asyncio
+import sys
+
+import bcrypt
+import geopy.geocoders as geocoders
+import requests
 from bs4 import BeautifulSoup
+from bson.objectid import ObjectId
 from database import (
-    users_collection,
     bus_routes_collection,
     bus_stops_collection,
+    users_collection,
 )
+from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
 
-warnings.simplefilter(
-    'ignore', requests.packages.urllib3.exceptions.InsecureRequestWarning)
+# Suppress the InsecureRequestWarning that appears when using verify=False
+warnings.simplefilter('ignore', InsecureRequestWarning)
 
 
 async def check_user_async(email: str) -> bool:
@@ -20,73 +25,6 @@ async def check_user_async(email: str) -> bool:
     except Exception as e:
         print(f"Error while checking email: {e}")
         return False
-
-
-async def get_fare_details_async(origin_name: str, desti_name: str):
-    """
-    Fetches fare details for a specific bus route from the Surat Sitilink website.
-    """
-    url = "https://www.suratsitilink.org/GetFare.aspx"
-
-    try:
-        # Step 1: Get the dropdown values for the stops
-        get_response = requests.get(url, verify=False)
-        get_soup = BeautifulSoup(get_response.text, 'html.parser')
-
-        origin_stops = {option.text.strip(): option.get('value') for option in get_soup.find(
-            'select', {'id': 'ContentPlaceHolder1_ddlOriginStop'}).find_all('option')}
-        desti_stops = {option.text.strip(): option.get('value') for option in get_soup.find(
-            'select', {'id': 'ContentPlaceHolder1_ddlDestiStop'}).find_all('option')}
-
-        origin_value = origin_stops.get(origin_name)
-        desti_value = desti_stops.get(desti_name)
-
-        if not origin_value or not desti_value or origin_value == desti_value:
-            print("Invalid origin or destination stop.")
-            return None
-
-        # Step 2: Prepare and send the POST request
-        post_data = {
-            'ctl00$ContentPlaceHolder1$ddlOriginStop': origin_value,
-            'ctl00$ContentPlaceHolder1$ddlDestiStop': desti_value,
-            'ctl00$ContentPlaceHolder1$btnGetFare': 'Get Fare',
-        }
-
-        # Add hidden form fields from the initial GET request
-        for hidden_input in get_soup.find_all('input', {'type': 'hidden'}):
-            post_data[hidden_input.get('name')] = hidden_input.get('value')
-
-        post_response = requests.post(url, data=post_data, verify=False)
-        post_soup = BeautifulSoup(post_response.text, 'html.parser')
-
-        # Step 3: Parse the fare details from the response
-        fare_table = post_soup.find('table', class_='table table-bordered')
-
-        if not fare_table:
-            print("Could not find the fare table after postback.")
-            return None
-
-        headers = [th.text.strip() for th in fare_table.find(
-            'thead').find_all('th') if th.text.strip()]
-        extracted_fare = {}
-        for row in fare_table.find('tbody').find_all('tr'):
-            row_header = row.find('th').text.strip()
-            cells = [td.text.strip() for td in row.find_all('td')]
-
-            if len(cells) == len(headers) - 1:
-                row_data = {}
-                for i in range(len(cells)):
-                    row_data[headers[i+1]] = cells[i]
-                extracted_fare[row_header] = row_data
-
-        return extracted_fare
-
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching the webpage: {e}")
-        return None
-    except Exception as e:
-        print(f"An error occurred during parsing: {e}")
-        return None
 
 
 async def create_user_async(
@@ -185,3 +123,96 @@ async def find_routes_between_stops_async(origin: str, destination: str):
     except Exception as e:
         print(f"Error finding routes: {e}")
         return []
+
+
+async def get_fare_details_async(origin_name: str, desti_name: str):
+    url = "https://www.suratsitilink.org/GetFare.aspx"
+
+    # Define a helper function to perform blocking I/O in a thread
+    def fetch_fare_sync():
+        try:
+            # First, make a GET request to get the view state and validation tokens
+            with requests.Session() as session:
+                response_get = session.get(url, verify=False, timeout=10)
+                response_get.raise_for_status()
+
+                soup = BeautifulSoup(response_get.text, 'html.parser')
+
+                # Extract all stop options and their values
+                origin_stops = {option.text.strip(): option['value'] for option in soup.select(
+                    '#ContentPlaceHolder1_ddlOriginStop option') if option.text.strip()}
+                desti_stops = {option.text.strip(): option['value'] for option in soup.select(
+                    '#ContentPlaceHolder1_ddlDestiStop option') if option.text.strip()}
+
+                origin_value = origin_stops.get(origin_name)
+                desti_value = desti_stops.get(desti_name)
+
+                if not origin_value or not desti_value or origin_value == desti_value:
+                    return {"error": "Invalid origin or destination stop name."}
+
+                # Extract hidden form fields for validation
+                viewstate = soup.select_one('#__VIEWSTATE')['value']
+                eventvalidation = soup.select_one(
+                    '#__EVENTVALIDATION')['value']
+
+                # Prepare the form data for the POST request
+                formdata = {
+                    'ctl00$ContentPlaceHolder1$ddlOriginStop': origin_value,
+                    'ctl00$ContentPlaceHolder1$ddlDestiStop': desti_value,
+                    '__EVENTTARGET': 'ctl00$ContentPlaceHolder1$ddlDestiStop',
+                    '__VIEWSTATE': viewstate,
+                    '__EVENTVALIDATION': eventvalidation,
+                }
+
+                # Make the POST request to get the fare details
+                response_post = session.post(
+                    url, data=formdata, verify=False, timeout=10)
+                response_post.raise_for_status()
+
+                post_soup = BeautifulSoup(response_post.text, 'html.parser')
+                fare_table = post_soup.select_one(
+                    '#ContentPlaceHolder1_dvfaredetail .table-bordered')
+
+                if not fare_table:
+                    return {"error": "Could not find the fare table after form submission."}
+
+                # Parse the fare table
+                extracted_fare = {}
+                headers = [th.text.strip()
+                           for th in fare_table.select('thead th')]
+
+                for row in fare_table.select('tbody tr'):
+                    row_header_element = row.select_one('th')
+                    if not row_header_element:
+                        continue
+                    row_header = row_header_element.text.strip()
+                    cells = [td.text.strip() for td in row.select('td')]
+
+                    if len(cells) == len(headers) - 1:
+                        row_data = {headers[i+1]: cells[i]
+                                    for i in range(len(cells))}
+                        extracted_fare[row_header] = row_data
+
+                if extracted_fare:
+                    return extracted_fare
+                else:
+                    return {"error": "Fare details not found."}
+
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return {"error": f"Failed to fetch fare data: {e}"}
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return {"error": f"An unexpected error occurred: {e}"}
+
+    # Run the synchronous function in a thread to avoid blocking the event loop
+    return await asyncio.to_thread(fetch_fare_sync)
+
+
+async def get_user_by_email_async(email: str):
+    try:
+        user = await users_collection.find_one({"email": email}, {"_id": 0})
+        return user
+    except Exception as e:
+        print(f"Error getting user by email: {e}")
+        return None
