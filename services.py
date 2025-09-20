@@ -43,10 +43,11 @@ async def create_user_async(
 
 async def update_user_async(email : str, name : str, photo : str, password : str) -> tuple[bool, str]:
     try:
-        update_fields = {
-            "name": name,
-            "photo": photo
-        }
+        update_fields = {}
+        if name:
+            update_fields["name"] = name
+        if photo :
+            update_fields["photo"] = photo
         if password:
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             update_fields["password"] = hashed_password
