@@ -71,6 +71,19 @@ async def api_signin_user():
         print(f"Error during sign-in: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@api.route('/check_user', methods=['GET'])
+async def api_check_user():
+    try:
+        email = request.args.get('email')
+        if not email:
+            return jsonify({"error": "Email parameter is missing"}), 400
+        
+        user_exists = await srv.check_user_async(email)
+        
+        return jsonify({"email_exists": user_exists}), 200
+    except Exception as e:
+        print(f"Error checking user existence: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
 
 @api.route('/current_user', methods=['GET'])
 @jwt_required
