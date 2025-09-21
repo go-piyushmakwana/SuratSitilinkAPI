@@ -23,10 +23,18 @@ async def check_user_async(email: str) -> bool:
         return False
 
 
+async def get_user_by_email_async(email: str):
+    try:
+        user = await users_collection.find_one({"email": email}, {"_id": 0})
+        return user
+    except Exception as e:
+        print(f"Error getting user by email: {e}")
+        return None
+
+
 async def create_user_async(
     email: str,
     name: str,
-    provider: str,
     photo: str = None,
     password: str = None
 ) -> tuple[bool, str]:
@@ -37,7 +45,7 @@ async def create_user_async(
             "email": email,
             "name": name,
             "photo": photo,
-            "provider": provider,
+            "isEmailVerified": False,
             "created_at": datetime.datetime.now(datetime.timezone.utc),
             "password": hashed_password
         }
@@ -71,6 +79,17 @@ async def update_user_async(email: str, name: str, photo: str, password: str) ->
     except Exception as e:
         print(f"Error while updating user: {e}")
         return False, "An error occurred while updating the user."
+
+
+async def authenticate_user(email: str, password: str):
+    try:
+        user = await users_collection.find_one({"email": email})
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
+            return user
+        return None
+    except Exception as e:
+        print(f"Error authenticating user: {e}")
+        return None
 
 
 async def get_route_by_id_async(route_id: str):
@@ -203,12 +222,3 @@ async def get_fare_details_async(origin_name: str, desti_name: str):
 
     # Run the synchronous function in a thread to avoid blocking the event loop
     return await asyncio.to_thread(fetch_fare_sync)
-
-
-async def get_user_by_email_async(email: str):
-    try:
-        user = await users_collection.find_one({"email": email}, {"_id": 0})
-        return user
-    except Exception as e:
-        print(f"Error getting user by email: {e}")
-        return None

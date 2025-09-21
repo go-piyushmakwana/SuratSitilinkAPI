@@ -1,5 +1,9 @@
 from quart import Blueprint, request, jsonify, g
 import services as srv
+from config import config
+import jwt
+from datetime import datetime, timezone
+from auth import jwt_required
 
 api = Blueprint('api', __name__, url_prefix='/api/v2')
 
@@ -14,26 +18,99 @@ def serialize_document(doc):
 async def index():
     return jsonify({"message": "Welcome to the Surat Sitilink API!"})
 
+# Auth Endpoints
+
 
 @api.route('/register_user', methods=['POST'])
 async def api_register():
     try:
         data = await request.get_json()
-        email, displayName, photoURL, providerId, password = data.get('email'), data.get(
-            'displayName'), data.get('photoURL'), data.get('providerId'), data.get('password')
+        email, name, password = data.get(
+            'email'), data.get('name'), data.get('password')
+        photo = data.get('photo')
 
-        if not email:
+        if not email or not name or not password:
             return jsonify({"error": "Missing required fields"}), 400
+
         if await srv.check_user_async(email):
             return jsonify({"error": "Email already exists."}), 409
 
         success, message = await srv.create_user_async(
-            name=displayName, email=email, password=password, photo=photoURL, provider=providerId
+            email=email, name=name, password=password, photo=photo
         )
         return (jsonify({"success": True, "message": message}), 201) if success else (jsonify({"error": message}), 500)
     except Exception as e:
         print(f"Error during user registration: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
+
+@api.route('/signin', methods=['POST'])
+async def api_signin():
+    try:
+        data = await request.get_json()
+        email, password = data.get('email'), data.get('password')
+
+        if not email or not password:
+            return jsonify({"error": "Missing email or password"}), 400
+
+        user = await srv.authenticate_user(email, password)
+        if user:
+            # Generate JWT
+            payload = {
+                'email': user['email'],
+                'exp': datetime.now(timezone.utc) + config.JWT_EXPIRATION_DELTA
+            }
+            token = jwt.encode(
+                payload, config.JWT_SECRET_KEY, algorithm='HS256')
+            return jsonify({
+                "success": True,
+                "message": "Sign in successful.",
+                "token": token
+            }), 200
+        else:
+            return jsonify({"error": "Invalid email or password"}), 401
+    except Exception as e:
+        print(f"Error during sign-in: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
+
+@api.route('/current_user', methods=['GET'])
+@jwt_required
+async def api_current_user():
+    try:
+        user_email = g.email
+        user = await srv.get_user_by_email_async(user_email)
+        if user:
+            # Remove sensitive data like password hash before sending
+            user.pop('password', None)
+            return jsonify({"user": user}), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        print(f"Error getting current user: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
+
+@api.route('/update_user', methods=['PUT'])
+@jwt_required
+async def api_update_user():
+    try:
+        data = await request.get_json()
+        user_email = g.email
+        name = data.get('name')
+        photo = data.get('photo')
+        password = data.get('password')
+
+        success, message = await srv.update_user_async(
+            email=user_email, name=name, photo=photo, password=password
+        )
+        return (jsonify({"success": True, "message": message}), 200) if success else (jsonify({"error": message}), 500)
+    except Exception as e:
+        print(f"Error during user update: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
+# Surat Sitilink API Endpoints
+
 
 @api.route('/fare_prices', methods=['GET'])
 async def api_get_fare_prices():
@@ -47,6 +124,7 @@ async def api_get_fare_prices():
         return jsonify(fare_details), 200
     else:
         return jsonify({"error": "Could not retrieve fare details."}), 500
+
 
 @api.route('/update_user', methods=['PUT'])
 async def api_update_user():
@@ -65,6 +143,7 @@ async def api_update_user():
     except Exception as e:
         print(f"Error during user update: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/routes', methods=['GET'])
 async def api_get_routes():
