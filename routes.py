@@ -20,23 +20,35 @@ async def index():
 
 
 @api.route('/register_user', methods=['POST'])
-async def api_create_user():
+async def api_register():
     try:
         data = await request.get_json()
-        email, name, password = data.get(
-            'email'), data.get('name'), data.get('password')
+        email, name, password = data.get('email'), data.get('name'), data.get('password')
         photo = data.get('photo')
 
         if not email or not name or not password:
             return jsonify({"error": "Missing required fields"}), 400
-
+        
         if await srv.check_user_async(email):
             return jsonify({"error": "Email already exists."}), 409
 
         success, message = await srv.create_user_async(
             email=email, name=name, password=password, photo=photo
         )
-        return (jsonify({"success": True, "message": message}), 201) if success else (jsonify({"error": message}), 500)
+        if success:
+            # Generate JWT on successful registration
+            payload = {
+                'email': email,
+                'exp': datetime.now(timezone.utc) + config.JWT_EXPIRATION_DELTA
+            }
+            token = jwt.encode(payload, config.JWT_SECRET_KEY, algorithm='HS256')
+            return jsonify({
+                "success": True, 
+                "message": message,
+                "token": token
+            }), 201
+        else:
+            return jsonify({"error": message}), 500
     except Exception as e:
         print(f"Error during user registration: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
