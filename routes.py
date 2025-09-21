@@ -1,5 +1,4 @@
 from quart import Blueprint, request, jsonify, g
-from auth import jwt_required
 import services as srv
 
 api = Blueprint('api', __name__, url_prefix='/api/v2')

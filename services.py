@@ -1,13 +1,9 @@
 import datetime
 import warnings
 import asyncio
-import sys
-
 import bcrypt
-import geopy.geocoders as geocoders
 import requests
 from bs4 import BeautifulSoup
-from bson.objectid import ObjectId
 from database import (
     bus_routes_collection,
     bus_stops_collection,
