@@ -1,7 +1,7 @@
 from quart import Blueprint, request, jsonify, g
 import services as srv
-from config import config
 import jwt
+from config import config
 from datetime import datetime, timezone
 from auth import jwt_required
 
@@ -18,11 +18,9 @@ def serialize_document(doc):
 async def index():
     return jsonify({"message": "Welcome to the Surat Sitilink API!"})
 
-# Auth Endpoints
-
 
 @api.route('/register_user', methods=['POST'])
-async def api_register():
+async def api_create_user():
     try:
         data = await request.get_json()
         email, name, password = data.get(
@@ -45,7 +43,7 @@ async def api_register():
 
 
 @api.route('/signin', methods=['POST'])
-async def api_signin():
+async def api_signin_user():
     try:
         data = await request.get_json()
         email, password = data.get('email'), data.get('password')
@@ -76,7 +74,7 @@ async def api_signin():
 
 @api.route('/current_user', methods=['GET'])
 @jwt_required
-async def api_current_user():
+async def api_current_login_user():
     try:
         user_email = g.email
         user = await srv.get_user_by_email_async(user_email)
@@ -93,7 +91,7 @@ async def api_current_user():
 
 @api.route('/update_user', methods=['PUT'])
 @jwt_required
-async def api_update_user():
+async def api_update_current_user():
     try:
         data = await request.get_json()
         user_email = g.email
@@ -126,35 +124,16 @@ async def api_get_fare_prices():
         return jsonify({"error": "Could not retrieve fare details."}), 500
 
 
-@api.route('/update_user', methods=['PUT'])
-async def api_update_user():
-    try:
-        data = await request.get_json()
-        email = data.get('email')
-        name = data.get('name')
-        photo = data.get('photo')
-        password = data.get('password')
-
-        if not email or not name:
-            return jsonify({"error": "Missing required fields"}), 400
-
-        success, message = await srv.update_user_async(email=email, name=name, photo=photo, password=password)
-        return (jsonify({"success": True, "message": message}), 200) if success else (jsonify({"error": message}), 500)
-    except Exception as e:
-        print(f"Error during user update: {e}")
-        return jsonify({"error": "An internal server error occurred."}), 500
+@api.route('/stops', methods=['GET'])
+async def api_get_stops():
+    stops = await srv.get_all_stops_async()
+    return jsonify({"stops": stops}), 200
 
 
 @api.route('/routes', methods=['GET'])
 async def api_get_routes():
     routes = await srv.get_all_routes_async()
     return jsonify({"routes": routes}), 200
-
-
-@api.route('/stops', methods=['GET'])
-async def api_get_stops():
-    stops = await srv.get_all_stops_async()
-    return jsonify({"stops": stops}), 200
 
 
 @api.route('/routes/<route_id>', methods=['GET'])
