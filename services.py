@@ -56,13 +56,17 @@ async def create_user_async(
         return False, "An error occurred while creating the user."
 
 
-async def update_user_async(email: str, name: str, photo: str, password: str) -> tuple[bool, str]:
+async def update_user_async(email: str, name: str, photo: str, password: str , bio : str, url : str) -> tuple[bool, str]:
     try:
         update_fields = {}
         if name:
             update_fields["name"] = name
         if photo:
             update_fields["photo"] = photo
+        if bio:
+            update_fields["bio"] = bio  
+        if url:
+            update_fields["url"] = url
         if password:
             hashed_password = bcrypt.hashpw(
                 password.encode('utf-8'), bcrypt.gensalt())

@@ -122,10 +122,12 @@ async def api_update_current_user():
         user_email = g.email
         name = data.get('name')
         photo = data.get('photo')
+        bio = data.get('bio')
+        url = data.get('url')
         password = data.get('password')
 
         success, message = await srv.update_user_async(
-            email=user_email, name=name, photo=photo, password=password
+            email=user_email, name=name, photo=photo, password=password, bio=bio, url=url
         )
         return (jsonify({"success": True, "message": message}), 200) if success else (jsonify({"error": message}), 500)
     except Exception as e:
