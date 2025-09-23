@@ -21,3 +21,4 @@ db = get_db()
 bus_routes_collection = db["bus_routes"]
 bus_stops_collection = db["bus_stops"]
 users_collection = db["users"]
+gallery_collection = db["gallery"]

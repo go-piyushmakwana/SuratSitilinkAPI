@@ -8,6 +8,7 @@ from database import (
     bus_routes_collection,
     bus_stops_collection,
     users_collection,
+    gallery_collection
 )
 from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
 
@@ -145,6 +146,13 @@ async def find_routes_between_stops_async(origin: str, destination: str):
         print(f"Error finding routes: {e}")
         return []
 
+async def get_sitilink_gallery():
+    try:
+        cursor = gallery_collection.find({}, {"_id": 0})
+        return await cursor.to_list(None)
+    except Exception as e:
+        print(f"Error getting gallery images: {e}")
+        return []
 
 async def get_fare_details_async(origin_name: str, desti_name: str):
     url = "https://www.suratsitilink.org/GetFare.aspx"

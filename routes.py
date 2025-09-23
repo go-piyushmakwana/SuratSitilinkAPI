@@ -136,6 +136,10 @@ async def api_update_current_user():
 
 # Surat Sitilink API Endpoints
 
+@api.route('/gallery', methods=['GET'])
+async def api_get_gallery():
+    images = await srv.get_sitilink_gallery()
+    return jsonify({"gallery": images}), 200
 
 @api.route('/fare_prices', methods=['GET'])
 async def api_get_fare_prices():
