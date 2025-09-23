@@ -46,6 +46,8 @@ async def create_user_async(
             "name": name,
             "photo": photo,
             "isEmailVerified": False,
+            "bio": None,
+            "url": None,
             "created_at": datetime.datetime.now(datetime.timezone.utc),
             "password": hashed_password
         }
