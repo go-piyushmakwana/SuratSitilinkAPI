@@ -46,6 +46,8 @@ async def delete_user_async(email: str) -> tuple[bool, str]:
 async def create_user_async(
     email: str,
     name: str,
+    gender: str,
+    dob: str,
     photo: str = None,
     password: str = None
 ) -> tuple[bool, str]:
@@ -55,6 +57,8 @@ async def create_user_async(
         user = {
             "email": email,
             "name": name,
+            "birthdate": dob,
+            "gender": gender,
             "photo": photo,
             "isEmailVerified": False,
             "bio": None,

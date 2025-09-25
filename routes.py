@@ -23,7 +23,7 @@ async def index():
 async def api_register():
     try:
         data = await request.get_json()
-        email, name, password = data.get('email'), data.get('name'), data.get('password')
+        email, name, password, gender, dob = data.get('email'), data.get('name'), data.get('password'), data.get('gender'), data.get('dob')
         photo = data.get('photo')
 
         if not email or not name or not password:
@@ -33,7 +33,7 @@ async def api_register():
             return jsonify({"error": "Email already exists."}), 409
 
         success, message = await srv.create_user_async(
-            email=email, name=name, password=password, photo=photo
+            email=email, name=name, password=password, photo=photo, gender=gender, dob=dob
         )
         if success:
             # Generate JWT on successful registration
