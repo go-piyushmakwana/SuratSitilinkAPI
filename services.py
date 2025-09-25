@@ -273,3 +273,14 @@ async def get_fare_details_async(origin_name: str, desti_name: str):
 
     # Run the synchronous function in a thread to avoid blocking the event loop
     return await asyncio.to_thread(fetch_fare_sync)
+
+async def get_tickets_history_async(user_email: str):
+    try:
+        tickets = []
+        cursor = tickets_collection.find({"user_email": user_email})
+        for ticket in await cursor.to_list(length=None):
+            tickets.append(ticket)
+        return tickets
+    except Exception as e:
+        print(f"Error retrieving ticket history: {e}")
+        return []

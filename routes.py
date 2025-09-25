@@ -211,6 +211,20 @@ async def api_get_route_by_id(route_id):
         print(f"Error in api_get_route_by_id: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@api.route('/tickets/history', methods=['GET'])
+@jwt_required
+async def api_get_tickets_history():
+    try:
+        user_email = g.email
+        tickets = await srv.get_tickets_history_async(user_email)
+        
+        # Serialize the tickets to convert ObjectId to string
+        serialized_tickets = [serialize_document(ticket) for ticket in tickets]
+
+        return jsonify({"tickets": serialized_tickets}), 200
+    except Exception as e:
+        print(f"Error fetching ticket history: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
 
 @api.route('/find_routes', methods=['GET'])
 async def api_find_routes():
