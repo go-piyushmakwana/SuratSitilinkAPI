@@ -8,7 +8,9 @@ from database import (
     bus_routes_collection,
     bus_stops_collection,
     users_collection,
-    gallery_collection
+    gallery_collection,
+    tickets_collection,
+    feedback_collection
 )
 from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
 
@@ -167,7 +169,28 @@ async def get_sitilink_gallery():
     except Exception as e:
         print(f"Error getting gallery images: {e}")
         return []
-
+    
+async def create_ticket_async(user_email, ticket_data):
+    try:
+        ticket_document = {
+            "user_email": user_email,
+            "origin": ticket_data.get("origin"),
+            "destination": ticket_data.get("destination"),
+            "service_no": ticket_data.get("service_no"),
+            "booking_date": ticket_data.get("booking_date"),
+            "journey_time": ticket_data.get("journey_time"),
+            "passengers": ticket_data.get("passengers"),
+            "total_fare": ticket_data.get("total_fare"),
+            "passengers_list": ticket_data.get("passengers_list"),
+            "sitilink_Id": ticket_data.get("sitilink_Id"),
+            "created_at": datetime.datetime.now(datetime.timezone.utc)
+        }
+        await tickets_collection.insert_one(ticket_document)
+        return True, "Ticket booked successfully."
+    except Exception as e:
+        print(f"Error creating ticket: {e}")
+        return False, "An error occurred while booking the ticket."
+    
 async def get_fare_details_async(origin_name: str, desti_name: str):
     url = "https://www.suratsitilink.org/GetFare.aspx"
 
