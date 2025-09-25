@@ -113,6 +113,16 @@ async def api_current_login_user():
         print(f"Error getting current user: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@api.route('/delete_user', methods=['DELETE'])
+@jwt_required
+async def api_delete_current_user():
+    try:
+        user_email = g.email
+        success, message = await srv.delete_user_async(user_email)
+        return (jsonify({"success": True, "message": message}), 200) if success else (jsonify({"error": message}), 500)
+    except Exception as e:
+        print(f"Error during user deletion: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
 
 @api.route('/update_user', methods=['PUT'])
 @jwt_required

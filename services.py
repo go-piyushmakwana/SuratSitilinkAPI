@@ -32,6 +32,16 @@ async def get_user_by_email_async(email: str):
         print(f"Error getting user by email: {e}")
         return None
 
+async def delete_user_async(email: str) -> tuple[bool, str]:
+    try:
+        result = await users_collection.delete_one({"email": email})
+        if result.deleted_count == 1:
+            return True, "User deleted successfully."
+        else:
+            return False, "User not found."
+    except Exception as e:
+        print(f"Error while deleting user: {e}")
+        return False, "An error occurred while deleting the user."
 
 async def create_user_async(
     email: str,
