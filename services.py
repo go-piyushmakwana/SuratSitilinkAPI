@@ -104,6 +104,35 @@ async def update_user_async(email: str, name: str, photo: str, password: str , b
         print(f"Error while updating user: {e}")
         return False, "An error occurred while updating the user."
 
+async def update_password_async(email: str, old_password: str, new_password: str) -> tuple[bool, str]:
+    """Authenticates the user with the old password and updates it with the new one."""
+    try:
+        user = await users_collection.find_one({"email": email})
+        if not user:
+            return False, "User not found."
+
+        # Verify old password
+        if not bcrypt.checkpw(old_password.encode('utf-8'), user['password']):
+            return False, "Incorrect old password."
+
+        # Hash and update new password
+        hashed_password = bcrypt.hashpw(
+            new_password.encode('utf-8'), bcrypt.gensalt()
+        )
+
+        result = await users_collection.update_one(
+            {"email": email}, {"$set": {"password": hashed_password}}
+        )
+
+        if result.modified_count == 1:
+            return True, "Password updated successfully."
+        else:
+            # Should only happen if user document disappeared between find and update, which is unlikely.
+            return False, "Password update failed."
+
+    except Exception as e:
+        print(f"Error during password update: {e}")
+        return False, f"An error occurred: {e}"
 
 async def authenticate_user(email: str, password: str):
     try:

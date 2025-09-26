@@ -166,6 +166,38 @@ async def api_update_current_user():
         print(f"Error during user update: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@api.route('/user/password', methods=['PUT'])
+@jwt_required
+async def api_update_password():
+    try:
+        data = await request.get_json()
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        user_email = g.email
+
+        if not old_password or not new_password:
+            return jsonify({"error": "Missing old_password or new_password"}), 400
+
+        # Basic password length validation
+        if len(new_password) < 6:
+            return jsonify({"error": "New password must be at least 6 characters long."}), 400
+
+        success, message = await srv.update_password_async(
+            email=user_email, old_password=old_password, new_password=new_password
+        )
+
+        if success:
+            return jsonify({"success": True, "message": message}), 200
+        else:
+            # If authentication failed (incorrect old password), return 401 Unauthorized
+            if message == "Incorrect old password.":
+                return jsonify({"error": message}), 401
+            return jsonify({"error": message}), 500
+
+    except Exception as e:
+        print(f"Error during password update API: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
 # Surat Sitilink API Endpoints
 
 @api.route('/gallery', methods=['GET'])
