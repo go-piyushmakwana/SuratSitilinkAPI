@@ -1,0 +1,16 @@
+# Exported from Render on 2025-09-26T13:14:20Z
+version: "1"
+projects:
+- name: Python API
+  environments:
+  - name: Development
+    services:
+    - type: web
+      name: MySuratSitilink
+      runtime: python
+      repo: https://github.com/go-piyushmakwana/SuratSitilinkAPI
+      plan: free
+      region: oregon
+      buildCommand: pip install -r requirements.txt
+      startCommand: hypercorn main:app -b 0.0.0.0:$PORT
+      autoDeployTrigger: "off"
