@@ -238,3 +238,30 @@ async def api_find_routes():
         return jsonify({"routes": routes}), 200
     else:
         return jsonify({"message": "No routes found between the specified stops."}), 404
+
+@api.route('/tickets/<ticket_id>', methods=['DELETE'])
+@jwt_required
+async def api_delete_ticket(ticket_id):
+    try:
+        user_email = g.email
+        
+        # Call the service function to attempt deletion
+        success, message = await srv.delete_ticket_async(user_email, ticket_id)
+
+        if success:
+            return jsonify({"success": True, "message": message}), 200
+        else:
+            # Assign appropriate HTTP status codes based on the error message
+            status_code = 500
+            if "not found" in message:
+                status_code = 404
+            elif "unauthorized" in message:
+                status_code = 403
+            elif "Invalid ticket ID" in message:
+                status_code = 400
+            
+            return jsonify({"error": message}), status_code
+    
+    except Exception as e:
+        print(f"Error deleting ticket: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500

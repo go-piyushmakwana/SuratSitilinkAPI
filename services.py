@@ -3,6 +3,7 @@ import warnings
 import asyncio
 import bcrypt
 import requests
+from bson import ObjectId
 from bs4 import BeautifulSoup
 from database import (
     bus_routes_collection,
@@ -284,3 +285,31 @@ async def get_tickets_history_async(user_email: str):
     except Exception as e:
         print(f"Error retrieving ticket history: {e}")
         return []
+
+async def delete_ticket_async(user_email: str, ticket_id: str) -> tuple[bool, str]:
+    """Deletes a ticket only if it belongs to the authenticated user."""
+    try:
+        # Convert the string ticket_id to ObjectId
+        object_id = ObjectId(ticket_id)
+    except Exception:
+        return False, "Invalid ticket ID format."
+
+    try:
+        # Delete the ticket matching both the _id and the user_email for security
+        result = await tickets_collection.delete_one({
+            "_id": object_id,
+            "user_email": user_email
+        })
+
+        if result.deleted_count == 1:
+            return True, "Ticket deleted successfully."
+        else:
+            # Check if the ticket exists but belongs to someone else, or doesn't exist at all
+            if await tickets_collection.find_one({"_id": object_id}):
+                return False, "Ticket found, but unauthorized to delete."
+            else:
+                return False, "Ticket not found."
+
+    except Exception as e:
+        print(f"Error deleting ticket: {e}")
+        return False, "An error occurred while deleting the ticket."
