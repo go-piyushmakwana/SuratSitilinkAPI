@@ -4,6 +4,7 @@ import jwt
 from config import config
 from datetime import datetime, timezone
 from auth import jwt_required
+from utils import generate_jwt
 
 api = Blueprint('api', __name__, url_prefix='/api/v2')
 
@@ -54,8 +55,8 @@ async def api_register():
         return jsonify({"error": "An internal server error occurred."}), 500
 
 
-@api.route('/signin', methods=['POST'])
-async def api_signin_user():
+@api.route('/login_user', methods=['POST'])
+async def api_login():
     try:
         data = await request.get_json()
         email, password = data.get('email'), data.get('password')
@@ -63,24 +64,50 @@ async def api_signin_user():
         if not email or not password:
             return jsonify({"error": "Missing email or password"}), 400
 
-        user = await srv.authenticate_user(email, password)
-        if user:
-            # Generate JWT
-            payload = {
-                'email': user['email'],
-                'exp': datetime.now(timezone.utc) + config.JWT_EXPIRATION_DELTA
-            }
-            token = jwt.encode(
-                payload, config.JWT_SECRET_KEY, algorithm='HS256')
-            return jsonify({
-                "success": True,
-                "message": "Sign in successful.",
-                "token": token
-            }), 200
+        # Use the updated authenticate_user service function
+        success, result = await srv.authenticate_user(email, password)
+        
+        if success:
+            user = result
+            token = generate_jwt(user)
+            return jsonify({"success": True, "message": "Login successful", "token": token}), 200
         else:
-            return jsonify({"error": "Invalid email or password"}), 401
+            error_message = result # The error message string
+            
+            if error_message == "Incorrect password.":
+                # User exists, but password is wrong
+                return jsonify({"error": "Password is wrong."}), 401
+            elif error_message == "User not found.":
+                # User does not exist
+                return jsonify({"error": "Credentials not available or invalid."}), 401
+            else:
+                # Other authentication failures
+                return jsonify({"error": "Authentication failed."}), 401
+                
     except Exception as e:
-        print(f"Error during sign-in: {e}")
+        print(f"Error during user login: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
+
+@api.route('/forgot_password', methods=['POST'])
+async def api_forgot_password():
+    """Endpoint for initiating a password reset process, requiring email and birthdate."""
+    try:
+        data = await request.get_json()
+        email = data.get('email')
+        birthdate = data.get('birthdate')
+
+        if not email or not birthdate:
+            return jsonify({"error": "Missing email or birthdate"}), 400
+        
+        # Pass both email and birthdate to the service function
+        _, message = await srv.generate_password_reset_token_async(email, birthdate)
+        
+        # Return a generic success message to prevent user enumeration
+        return jsonify({"success": True, "message": message}), 200
+        
+    except Exception as e:
+        print(f"Error during forgot password request: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
 @api.route('/check_user', methods=['GET'])

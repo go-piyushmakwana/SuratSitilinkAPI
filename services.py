@@ -134,16 +134,58 @@ async def update_password_async(email: str, old_password: str, new_password: str
         print(f"Error during password update: {e}")
         return False, f"An error occurred: {e}"
 
-async def authenticate_user(email: str, password: str):
+async def authenticate_user(email: str, password: str) -> tuple[bool, str | dict]:
+    """
+    Authenticates user and returns specific status messages for better login error handling.
+    Returns: (True, user_dict) on success, (False, error_message_string) on failure.
+    """
     try:
         user = await users_collection.find_one({"email": email})
-        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
-            return user
-        return None
-    except Exception as e:
-        print(f"Error authenticating user: {e}")
-        return None
+        
+        if not user:
+            return False, "User not found."
 
+        # User found, check password
+        if user.get('password') and bcrypt.checkpw(password.encode('utf-8'), user['password']):
+            # Success
+            return True, user
+        else:
+            # Password check failed
+            return False, "Incorrect password."
+            
+    except Exception as e:
+        print(f"Error during user authentication: {e}")
+        return False, "Authentication failed due to a server error."
+
+async def generate_password_reset_token_async(email: str, birthdate: str) -> tuple[bool, str]:
+    """
+    Placeholder for a real-world password reset implementation, requiring email and birthdate verification.
+    
+    IMPORTANT: We return a generic success message regardless of user existence or match status 
+    to prevent user enumeration attacks.
+    """
+    try:
+        user = await users_collection.find_one({"email": email})
+        
+        is_match = False
+        if user:
+            # Assuming 'birthdate' is stored as a string field in the user document.
+            # In a real system, you would store and compare dates securely (e.g., as datetime objects).
+            stored_birthdate = user.get('birthdate')
+            
+            if stored_birthdate == birthdate:
+                is_match = True
+                
+        # Only proceed with the token/email logic if both the email and birthdate match.
+        if is_match:
+            # Placeholder for actual token generation and email sending
+            print(f"DEBUG: Password reset requested for {email} with correct birthdate. Token generation simulated.")
+            
+        return True, "Email and birthdate match a registered account."
+        
+    except Exception as e:
+        print(f"Error generating password reset token: {e}")
+        return False, "Failed to initiate password reset due to a server error."
 
 async def get_route_by_id_async(route_id: str):
     try:
