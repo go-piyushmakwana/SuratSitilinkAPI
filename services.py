@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import warnings
 import asyncio
 import bcrypt
@@ -66,7 +66,7 @@ async def create_user_async(
             "isEmailVerified": False,
             "bio": None,
             "url": None,
-            "created_at": datetime.datetime.now(datetime.timezone.utc),
+            "created_at": datetime.fromisoformat(current_utc_time_async).astimezone(),
             "password": hashed_password
         }
         await users_collection.insert_one(user)
@@ -103,6 +103,10 @@ async def update_user_async(email: str, name: str, photo: str, password: str , b
     except Exception as e:
         print(f"Error while updating user: {e}")
         return False, "An error occurred while updating the user."
+
+async def current_utc_time_async() -> str:
+    """Returns the current UTC time as an ISO 8601 formatted string."""
+    return datetime.now(datetime.timezone.utc)
 
 async def update_password_async(email: str, old_password: str, new_password: str) -> tuple[bool, str]:
     """Authenticates the user with the old password and updates it with the new one."""
@@ -255,7 +259,7 @@ async def create_ticket_async(user_email, ticket_data):
             "total_fare": ticket_data.get("total_fare"),
             "passengers_list": ticket_data.get("passengers_list"),
             "sitilink_Id": ticket_data.get("sitilink_Id"),
-            "created_at": datetime.datetime.now(datetime.timezone.utc)
+            "created_at": datetime.fromisoformat(current_utc_time_async).astimezone()
         }
         await tickets_collection.insert_one(ticket_document)
         return True, "Ticket booked successfully."
