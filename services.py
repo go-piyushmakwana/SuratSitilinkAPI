@@ -1,4 +1,4 @@
-from datetime import datetime
+
 import warnings
 import asyncio
 import bcrypt
@@ -35,6 +35,7 @@ async def get_user_by_email_async(email: str):
         print(f"Error getting user by email: {e}")
         return None
 
+
 async def delete_user_async(email: str) -> tuple[bool, str]:
     try:
         result = await users_collection.delete_one({"email": email})
@@ -45,6 +46,7 @@ async def delete_user_async(email: str) -> tuple[bool, str]:
     except Exception as e:
         print(f"Error while deleting user: {e}")
         return False, "An error occurred while deleting the user."
+
 
 async def create_user_async(
     email: str,
@@ -66,7 +68,6 @@ async def create_user_async(
             "isEmailVerified": False,
             "bio": None,
             "url": None,
-            "created_at": datetime.fromisoformat(current_utc_time_async).astimezone(),
             "password": hashed_password
         }
         await users_collection.insert_one(user)
@@ -76,7 +77,7 @@ async def create_user_async(
         return False, "An error occurred while creating the user."
 
 
-async def update_user_async(email: str, name: str, photo: str, password: str , bio : str, url : str) -> tuple[bool, str]:
+async def update_user_async(email: str, name: str, photo: str, password: str, bio: str, url: str) -> tuple[bool, str]:
     try:
         update_fields = {}
         if name:
@@ -84,7 +85,7 @@ async def update_user_async(email: str, name: str, photo: str, password: str , b
         if photo:
             update_fields["photo"] = photo
         if bio:
-            update_fields["bio"] = bio  
+            update_fields["bio"] = bio
         if url:
             update_fields["url"] = url
         if password:
@@ -104,9 +105,6 @@ async def update_user_async(email: str, name: str, photo: str, password: str , b
         print(f"Error while updating user: {e}")
         return False, "An error occurred while updating the user."
 
-async def current_utc_time_async() -> str:
-    """Returns the current UTC time as an ISO 8601 formatted string."""
-    return datetime.now(datetime.timezone.utc)
 
 async def update_password_async(email: str, old_password: str, new_password: str) -> tuple[bool, str]:
     """Authenticates the user with the old password and updates it with the new one."""
@@ -138,6 +136,7 @@ async def update_password_async(email: str, old_password: str, new_password: str
         print(f"Error during password update: {e}")
         return False, f"An error occurred: {e}"
 
+
 async def authenticate_user(email: str, password: str) -> tuple[bool, str | dict]:
     """
     Authenticates user and returns specific status messages for better login error handling.
@@ -145,7 +144,7 @@ async def authenticate_user(email: str, password: str) -> tuple[bool, str | dict
     """
     try:
         user = await users_collection.find_one({"email": email})
-        
+
         if not user:
             return False, "User not found."
 
@@ -156,40 +155,41 @@ async def authenticate_user(email: str, password: str) -> tuple[bool, str | dict
         else:
             # Password check failed
             return False, "Incorrect password."
-            
+
     except Exception as e:
         print(f"Error during user authentication: {e}")
         return False, "Authentication failed due to a server error."
 
+
 async def generate_password_reset_token_async(email: str, birthdate: str) -> tuple[bool, str]:
     """
     Placeholder for a real-world password reset implementation, requiring email and birthdate verification.
-    
+
     IMPORTANT: We return a generic success message regardless of user existence or match status 
     to prevent user enumeration attacks.
     """
     try:
         user = await users_collection.find_one({"email": email})
-        
+
         is_match = False
         if user:
-            # Assuming 'birthdate' is stored as a string field in the user document.
-            # In a real system, you would store and compare dates securely (e.g., as datetime objects).
             stored_birthdate = user.get('birthdate')
-            
+
             if stored_birthdate == birthdate:
                 is_match = True
-                
+
         # Only proceed with the token/email logic if both the email and birthdate match.
         if is_match:
             # Placeholder for actual token generation and email sending
-            print(f"DEBUG: Password reset requested for {email} with correct birthdate. Token generation simulated.")
-            
+            print(
+                f"DEBUG: Password reset requested for {email} with correct birthdate. Token generation simulated.")
+
         return True, "Email and birthdate match a registered account."
-        
+
     except Exception as e:
         print(f"Error generating password reset token: {e}")
         return False, "Failed to initiate password reset due to a server error."
+
 
 async def get_route_by_id_async(route_id: str):
     try:
@@ -238,6 +238,7 @@ async def find_routes_between_stops_async(origin: str, destination: str):
         print(f"Error finding routes: {e}")
         return []
 
+
 async def get_sitilink_gallery():
     try:
         cursor = gallery_collection.find({}, {"_id": 0})
@@ -245,7 +246,8 @@ async def get_sitilink_gallery():
     except Exception as e:
         print(f"Error getting gallery images: {e}")
         return []
-    
+
+
 async def create_ticket_async(user_email, ticket_data):
     try:
         ticket_document = {
@@ -258,15 +260,15 @@ async def create_ticket_async(user_email, ticket_data):
             "passengers": ticket_data.get("passengers"),
             "total_fare": ticket_data.get("total_fare"),
             "passengers_list": ticket_data.get("passengers_list"),
-            "sitilink_Id": ticket_data.get("sitilink_Id"),
-            "created_at": datetime.fromisoformat(current_utc_time_async).astimezone()
+            "sitilink_Id": ticket_data.get("sitilink_Id")
         }
         await tickets_collection.insert_one(ticket_document)
         return True, "Ticket booked successfully."
     except Exception as e:
         print(f"Error creating ticket: {e}")
         return False, "An error occurred while booking the ticket."
-    
+
+
 async def get_fare_details_async(origin_name: str, desti_name: str):
     url = "https://www.suratsitilink.org/GetFare.aspx"
 
@@ -350,6 +352,7 @@ async def get_fare_details_async(origin_name: str, desti_name: str):
     # Run the synchronous function in a thread to avoid blocking the event loop
     return await asyncio.to_thread(fetch_fare_sync)
 
+
 async def get_tickets_history_async(user_email: str):
     try:
         tickets = []
@@ -360,6 +363,7 @@ async def get_tickets_history_async(user_email: str):
     except Exception as e:
         print(f"Error retrieving ticket history: {e}")
         return []
+
 
 async def delete_ticket_async(user_email: str, ticket_id: str) -> tuple[bool, str]:
     """Deletes a ticket only if it belongs to the authenticated user."""
