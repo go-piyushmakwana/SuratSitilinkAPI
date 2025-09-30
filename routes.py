@@ -315,7 +315,7 @@ async def api_check_ticket():
     """
     try:
         data = await request.get_json()
-        sitilink_id = data.get('sitilink_id')
+        sitilink_id = data.get('sitilink_Id')
         origin = data.get('origin')
         destination = data.get('destination')
 

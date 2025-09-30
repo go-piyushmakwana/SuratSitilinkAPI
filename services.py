@@ -387,7 +387,8 @@ async def validate_ticket_async(sitilink_id: str, origin: str, destination: str)
     try:
         # Create the query to find a matching, active ticket
         query = {
-            "sitilink_id": sitilink_id,
+            ""
+            "sitilink_Id": sitilink_id,
             "origin": origin,
             "destination": destination
         }
