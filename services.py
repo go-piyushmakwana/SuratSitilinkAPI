@@ -11,6 +11,7 @@ from database import (
     users_collection,
     gallery_collection,
     tickets_collection,
+    contacts_collection,
     feedback_collection
 )
 from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
@@ -363,6 +364,46 @@ async def get_tickets_history_async(user_email: str):
     except Exception as e:
         print(f"Error retrieving ticket history: {e}")
         return []
+
+async def contact_us(name : str, email : str, subject : str, message : str, time : str) -> tuple[bool, str]:
+    try:
+        contact_us_doc = {
+            "name": name,
+            "email": email,
+            "subject": subject,
+            "message": message,
+            "created_time": time
+        }
+        await contacts_collection.insert_one(contact_us_doc)
+        return True, "Message submitted successfully."
+    except Exception as e:
+        print(f"Error submitting message: {e}")
+        return False, "An error occurred while submitting message."
+
+async def validate_ticket_async(sitilink_id: str, origin: str, destination: str):
+    """
+    Validates a ticket based on Sitilink ID, origin, and destination.
+    """
+    try:
+        # Create the query to find a matching, active ticket
+        query = {
+            "sitilink_id": sitilink_id,
+            "origin": origin,
+            "destination": destination
+        }
+
+        ticket = await tickets_collection.find_one(query)
+
+        if ticket:
+            # Exclude user_email for privacy if this were to be used by a conductor/public scanner
+            # For this context, we return the full safe ticket data (assuming password hash is not stored here)
+            return ticket
+        
+        return None
+
+    except Exception as e:
+        print(f"Error validating ticket: {e}")
+        return None
 
 
 async def delete_ticket_async(user_email: str, ticket_id: str) -> tuple[bool, str]:

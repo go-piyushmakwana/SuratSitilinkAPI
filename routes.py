@@ -285,6 +285,59 @@ async def api_get_tickets_history():
         print(f"Error fetching ticket history: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@api.route('/contact_us', methods=['POST'])
+async def api_contact_us():
+    try:
+        data = await request.get_json()
+        name = data.get('name')
+        email = data.get('email')
+        subject = data.get('subject')
+        message = data.get('message')
+        time = data.get('time')
+
+        if not name or not email or not subject or not message or not time:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        success, msg = await srv.contact_us(name, email, subject, message, time)
+        if success:
+            return jsonify({"success": True, "message": msg}), 201
+        else:
+            return jsonify({"error": msg}), 500
+    except Exception as e:
+        print(f"Error during message submission: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
+@api.route('/check_ticket', methods=['POST'])
+async def api_check_ticket():
+    """
+    Endpoint to validate a ticket using Sitilink ID, origin, and destination.
+    Returns the full ticket details if all fields match a record.
+    """
+    try:
+        data = await request.get_json()
+        sitilink_id = data.get('sitilink_id')
+        origin = data.get('origin')
+        destination = data.get('destination')
+
+        if not all([sitilink_id, origin, destination]):
+            return jsonify({"error": "Missing sitilink_id, origin, or destination in request body."}), 400
+
+        # Call the new service function to validate the ticket
+        ticket = await srv.validate_ticket_async(sitilink_id, origin, destination)
+
+        if ticket:
+            # If the ticket is found, return the full details, serialized
+            return jsonify({"success": True, "ticket": serialize_document(ticket)}), 200
+        else:
+            # If no matching ticket is found
+            return jsonify({"error": "Invalid ticket details or ticket not found."}), 404
+
+    except Exception as e:
+        print(f"Error checking ticket: {e}")
+        return jsonify({"error": "An internal server error occurred during ticket check."}), 500
+
+
+
 @api.route('/find_routes', methods=['GET'])
 async def api_find_routes():
     origin = request.args.get('origin')
