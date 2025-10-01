@@ -11,6 +11,7 @@ from database import (
     users_collection,
     gallery_collection,
     tickets_collection,
+    downloads_collection,
     contacts_collection,
     feedback_collection
 )
@@ -365,7 +366,8 @@ async def get_tickets_history_async(user_email: str):
         print(f"Error retrieving ticket history: {e}")
         return []
 
-async def contact_us(name : str, email : str, subject : str, message : str, time : str) -> tuple[bool, str]:
+
+async def contact_us(name: str, email: str, subject: str, message: str, time: str) -> tuple[bool, str]:
     try:
         contact_us_doc = {
             "name": name,
@@ -379,6 +381,7 @@ async def contact_us(name : str, email : str, subject : str, message : str, time
     except Exception as e:
         print(f"Error submitting message: {e}")
         return False, "An error occurred while submitting message."
+
 
 async def validate_ticket_async(sitilink_id: str, origin: str, destination: str):
     """
@@ -399,13 +402,20 @@ async def validate_ticket_async(sitilink_id: str, origin: str, destination: str)
             # Exclude user_email for privacy if this were to be used by a conductor/public scanner
             # For this context, we return the full safe ticket data (assuming password hash is not stored here)
             return ticket
-        
+
         return None
 
     except Exception as e:
         print(f"Error validating ticket: {e}")
         return None
 
+async def get_downloads_async():
+    try:
+        cursor = downloads_collection.find({}, {"_id": 0})
+        return await cursor.to_list(None)
+    except Exception as e:
+        print(f"Error getting downloads: {e}")
+        return []
 
 async def delete_ticket_async(user_email: str, ticket_id: str) -> tuple[bool, str]:
     """Deletes a ticket only if it belongs to the authenticated user."""

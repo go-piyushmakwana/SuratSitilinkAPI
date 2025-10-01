@@ -24,12 +24,13 @@ async def index():
 async def api_register():
     try:
         data = await request.get_json()
-        email, name, password, gender, dob = data.get('email'), data.get('name'), data.get('password'), data.get('gender'), data.get('dob')
+        email, name, password, gender, dob = data.get('email'), data.get(
+            'name'), data.get('password'), data.get('gender'), data.get('dob')
         photo = data.get('photo')
 
         if not email or not name or not password:
             return jsonify({"error": "Missing required fields"}), 400
-        
+
         if await srv.check_user_async(email):
             return jsonify({"error": "Email already exists."}), 409
 
@@ -42,9 +43,10 @@ async def api_register():
                 'email': email,
                 'exp': datetime.now(timezone.utc) + config.JWT_EXPIRATION_DELTA
             }
-            token = jwt.encode(payload, config.JWT_SECRET_KEY, algorithm='HS256')
+            token = jwt.encode(
+                payload, config.JWT_SECRET_KEY, algorithm='HS256')
             return jsonify({
-                "success": True, 
+                "success": True,
                 "message": message,
                 "token": token
             }), 201
@@ -66,14 +68,14 @@ async def api_login():
 
         # Use the updated authenticate_user service function
         success, result = await srv.authenticate_user(email, password)
-        
+
         if success:
             user = result
             token = generate_jwt(user)
             return jsonify({"success": True, "message": "Login successful", "token": token}), 200
         else:
-            error_message = result # The error message string
-            
+            error_message = result  # The error message string
+
             if error_message == "Incorrect password.":
                 # User exists, but password is wrong
                 return jsonify({"error": "Password is wrong."}), 401
@@ -83,7 +85,7 @@ async def api_login():
             else:
                 # Other authentication failures
                 return jsonify({"error": "Authentication failed."}), 401
-                
+
     except Exception as e:
         print(f"Error during user login: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
@@ -99,16 +101,17 @@ async def api_forgot_password():
 
         if not email or not birthdate:
             return jsonify({"error": "Missing email or birthdate"}), 400
-        
+
         # Pass both email and birthdate to the service function
         _, message = await srv.generate_password_reset_token_async(email, birthdate)
-        
+
         # Return a generic success message to prevent user enumeration
         return jsonify({"success": True, "message": message}), 200
-        
+
     except Exception as e:
         print(f"Error during forgot password request: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/check_user', methods=['GET'])
 async def api_check_user():
@@ -116,13 +119,14 @@ async def api_check_user():
         email = request.args.get('email')
         if not email:
             return jsonify({"error": "Email parameter is missing"}), 400
-        
+
         user_exists = await srv.check_user_async(email)
-        
+
         return jsonify({"email_exists": user_exists}), 200
     except Exception as e:
         print(f"Error checking user existence: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/current_user', methods=['GET'])
 @jwt_required
@@ -140,6 +144,7 @@ async def api_current_login_user():
         print(f"Error getting current user: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+
 @api.route('/delete_user', methods=['DELETE'])
 @jwt_required
 async def api_delete_current_user():
@@ -151,12 +156,14 @@ async def api_delete_current_user():
         print(f"Error during user deletion: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+
 @api.route('/book_ticket', methods=['POST'])
 @jwt_required
 async def api_book_ticket():
     try:
         data = await request.get_json()
-        required_fields = ["origin", "destination", "service_no", "booking_date", "journey_time", "passengers", "total_fare", "passengers_list", "sitilink_Id"]
+        required_fields = ["origin", "destination", "service_no", "booking_date",
+                           "journey_time", "passengers", "total_fare", "passengers_list", "sitilink_Id"]
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
 
@@ -172,6 +179,7 @@ async def api_book_ticket():
     except Exception as e:
         print(f"Error during ticket booking: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/update_user', methods=['PUT'])
 @jwt_required
@@ -192,6 +200,7 @@ async def api_update_current_user():
     except Exception as e:
         print(f"Error during user update: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/user/password', methods=['PUT'])
 @jwt_required
@@ -227,10 +236,12 @@ async def api_update_password():
 
 # Surat Sitilink API Endpoints
 
+
 @api.route('/gallery', methods=['GET'])
 async def api_get_gallery():
     images = await srv.get_sitilink_gallery()
     return jsonify({"gallery": images}), 200
+
 
 @api.route('/fare_prices', methods=['GET'])
 async def api_get_fare_prices():
@@ -270,13 +281,14 @@ async def api_get_route_by_id(route_id):
         print(f"Error in api_get_route_by_id: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+
 @api.route('/tickets/history', methods=['GET'])
 @jwt_required
 async def api_get_tickets_history():
     try:
         user_email = g.email
         tickets = await srv.get_tickets_history_async(user_email)
-        
+
         # Serialize the tickets to convert ObjectId to string
         serialized_tickets = [serialize_document(ticket) for ticket in tickets]
 
@@ -284,6 +296,7 @@ async def api_get_tickets_history():
     except Exception as e:
         print(f"Error fetching ticket history: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/contact_us', methods=['POST'])
 async def api_contact_us():
@@ -306,6 +319,7 @@ async def api_contact_us():
     except Exception as e:
         print(f"Error during message submission: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/check_ticket', methods=['POST'])
 async def api_check_ticket():
@@ -337,6 +351,15 @@ async def api_check_ticket():
         return jsonify({"error": "An internal server error occurred during ticket check."}), 500
 
 
+@api.route('/downloads', methods=['GET'])
+async def api_get_downloads():
+    try:
+        downloads = await srv.get_downloads_async()
+        return jsonify({"downloads": downloads}), 200
+    except Exception as e:
+        print(f"Error fetching downloads: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
+
 
 @api.route('/find_routes', methods=['GET'])
 async def api_find_routes():
@@ -351,12 +374,13 @@ async def api_find_routes():
     else:
         return jsonify({"message": "No routes found between the specified stops."}), 404
 
+
 @api.route('/tickets/<ticket_id>', methods=['DELETE'])
 @jwt_required
 async def api_delete_ticket(ticket_id):
     try:
         user_email = g.email
-        
+
         # Call the service function to attempt deletion
         success, message = await srv.delete_ticket_async(user_email, ticket_id)
 
@@ -371,9 +395,9 @@ async def api_delete_ticket(ticket_id):
                 status_code = 403
             elif "Invalid ticket ID" in message:
                 status_code = 400
-            
+
             return jsonify({"error": message}), status_code
-    
+
     except Exception as e:
         print(f"Error deleting ticket: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
