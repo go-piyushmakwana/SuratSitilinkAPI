@@ -5,6 +5,7 @@ import bcrypt
 import requests
 from bson import ObjectId
 from bs4 import BeautifulSoup
+import datetime
 from database import (
     bus_routes_collection,
     bus_stops_collection,
@@ -416,6 +417,35 @@ async def get_downloads_async():
     except Exception as e:
         print(f"Error getting downloads: {e}")
         return []
+
+async def create_feedback_async(
+    full_name: str,
+    email: str,
+    category: str,
+    feedback_for: str,
+    message: str,
+    phone_number: str = None,
+    file_link: str = None
+) -> tuple[bool, str]:
+    try:
+        feedback_data = {
+            "full_name": full_name,
+            "email": email,
+            "phone_number": phone_number,
+            "category": category,
+            "feedback_for": feedback_for,
+            "message": message,
+            "file_link": file_link,
+            "created_at": datetime.datetime.now(datetime.timezone.utc),
+            "status": "Submitted"  # Initial status
+        }
+        # Assuming you have a 'feedback_collection' defined in database.py
+        await feedback_collection.insert_one(feedback_data)
+        return True, "Feedback submitted successfully."
+    except Exception as e:
+        print(f"Error creating feedback record: {e}")
+        return False, "An error occurred while submitting feedback."
+
 
 async def delete_ticket_async(user_email: str, ticket_id: str) -> tuple[bool, str]:
     """Deletes a ticket only if it belongs to the authenticated user."""

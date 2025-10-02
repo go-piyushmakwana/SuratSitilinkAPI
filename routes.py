@@ -350,6 +350,47 @@ async def api_check_ticket():
         print(f"Error checking ticket: {e}")
         return jsonify({"error": "An internal server error occurred during ticket check."}), 500
 
+@api.route('/feedback', methods=['POST'])
+async def api_feedback():
+    """
+    Endpoint to submit user feedback.
+    """
+    try:
+        data = await request.get_json()
+        # Mandatory fields
+        full_name = data.get('full_name')
+        email = data.get('email')
+        category = data.get('category')
+        feedback_for = data.get('feedback_for')
+        message = data.get('message')
+        
+        # Optional fields
+        phone_number = data.get('phone_number')
+        file_link = data.get('file_link')
+
+        if not all([full_name, email, category, feedback_for, message]):
+            return jsonify({
+                "error": "Missing one or more mandatory fields: full_name, email, category, feedback_for, message"
+            }), 400
+
+        success, msg = await srv.create_feedback_async(
+            full_name=full_name,
+            email=email,
+            category=category,
+            feedback_for=feedback_for,
+            message=message,
+            phone_number=phone_number,
+            file_link=file_link
+        )
+
+        if success:
+            return jsonify({"success": True, "message": msg}), 201
+        else:
+            return jsonify({"error": msg}), 500
+
+    except Exception as e:
+        print(f"Error submitting feedback: {e}")
+        return jsonify({"error": "An internal server error occurred while processing feedback."}), 500
 
 @api.route('/downloads', methods=['GET'])
 async def api_get_downloads():
