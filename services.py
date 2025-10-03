@@ -164,36 +164,6 @@ async def authenticate_user(email: str, password: str) -> tuple[bool, str | dict
         return False, "Authentication failed due to a server error."
 
 
-async def generate_password_reset_token_async(email: str, birthdate: str) -> tuple[bool, str]:
-    """
-    Placeholder for a real-world password reset implementation, requiring email and birthdate verification.
-
-    IMPORTANT: We return a generic success message regardless of user existence or match status 
-    to prevent user enumeration attacks.
-    """
-    try:
-        user = await users_collection.find_one({"email": email})
-
-        is_match = False
-        if user:
-            stored_birthdate = user.get('birthdate')
-
-            if stored_birthdate == birthdate:
-                is_match = True
-
-        # Only proceed with the token/email logic if both the email and birthdate match.
-        if is_match:
-            # Placeholder for actual token generation and email sending
-            print(
-                f"DEBUG: Password reset requested for {email} with correct birthdate. Token generation simulated.")
-
-        return True, "Email and birthdate match a registered account."
-
-    except Exception as e:
-        print(f"Error generating password reset token: {e}")
-        return False, "Failed to initiate password reset due to a server error."
-
-
 async def get_route_by_id_async(route_id: str):
     try:
         route = await bus_routes_collection.find_one({"service_no": route_id}, {"stops": 1, '_id': 0})

@@ -91,28 +91,6 @@ async def api_login():
         return jsonify({"error": "An internal server error occurred."}), 500
 
 
-@api.route('/forgot_password', methods=['POST'])
-async def api_forgot_password():
-    """Endpoint for initiating a password reset process, requiring email and birthdate."""
-    try:
-        data = await request.get_json()
-        email = data.get('email')
-        birthdate = data.get('birthdate')
-
-        if not email or not birthdate:
-            return jsonify({"error": "Missing email or birthdate"}), 400
-
-        # Pass both email and birthdate to the service function
-        _, message = await srv.generate_password_reset_token_async(email, birthdate)
-
-        # Return a generic success message to prevent user enumeration
-        return jsonify({"success": True, "message": message}), 200
-
-    except Exception as e:
-        print(f"Error during forgot password request: {e}")
-        return jsonify({"error": "An internal server error occurred."}), 500
-
-
 @api.route('/check_user', methods=['GET'])
 async def api_check_user():
     try:
