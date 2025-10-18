@@ -1,8 +1,0 @@
-hypercorn
-motor
-pyjwt
-bcrypt
-quart
-quart_cors
-requests
-bs4
